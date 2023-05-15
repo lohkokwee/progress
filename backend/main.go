@@ -1,23 +1,61 @@
 package main
 
 import (
+	"log"
+	"net/http"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/lohkokwee/progress/backend/controllers"
 	"github.com/lohkokwee/progress/backend/initializers"
+	"github.com/lohkokwee/progress/backend/routes"
+)
+
+var (
+  server *gin.Engine
+
+  AuthController controllers.AuthController
+  AuthRouteController routes.AuthRouteController
+
+  UserController controllers.UserController
+  UserRouteController routes.UserRouteController
 )
 
 func init() {
-  initializers.LoadEnvVariables()
-  initializers.ConnectToDb()
-  initializers.SyncDatabase()
+  config, err := initializers.LoadConfig(".")
+  if err != nil {
+    log.Fatal("? Could not load environment variables. ", err)
+  }
+
+  initializers.ConnectDB(&config)
+
+  AuthController = controllers.NewAuthController(initializers.DB)
+  AuthRouteController = routes.NewAuthRouteController(AuthController)
+
+  UserController = controllers.NewUserController(initializers.DB)
+  UserRouteController = routes.NewRouteUserController(UserController)
+
+  server = gin.Default()
 }
 
 func main() {
-  router := gin.Default()
-  router.GET("/ping", func(ctx *gin.Context) {
-    ctx.JSON(200, gin.H{
-      "Message": "pong",
-    })
-  })
+  config, err := initializers.LoadConfig(".")
+  if err != nil {
+    log.Fatal("? Could not load environment variables. ", err)
+  }
 
-  router.Run()
+  corsConfig := cors.DefaultConfig()
+  corsConfig.AllowOrigins = []string{"http://localhost:8000", config.ClientOrigin}
+  corsConfig.AllowCredentials = true
+
+  server.Use(cors.New(corsConfig))
+
+  router := server.Group("/api")
+  router.GET("/healthchecker", func(ctx *gin.Context) {
+    message := "Successful ping to progress app backend."
+    ctx.JSON(http.StatusOK, gin.H{"message": message})
+  })
+  AuthRouteController.AuthRoute(router)
+  UserRouteController.UserRoute(router)
+  log.Fatal(server.Run(":" + config.ServerPort))
 }
