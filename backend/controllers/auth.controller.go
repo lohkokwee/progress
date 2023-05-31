@@ -25,17 +25,19 @@ func (ac *AuthController) SignUpUser(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusText(http.StatusBadRequest),
+			"status":  http.StatusBadRequest,
 			"message": err.Error(),
 		})
+		return
 	}
 
 	hashedPassword, err := utils.HashPassword(payload.Password)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{
-			"status":  http.StatusText(http.StatusBadGateway),
+			"status":  http.StatusBadGateway,
 			"message": err.Error(),
 		})
+		return
 	}
 
 	newUser := models.User{
@@ -47,20 +49,20 @@ func (ac *AuthController) SignUpUser(ctx *gin.Context) {
 	result := ac.DB.Create(&newUser)
 	if result.Error != nil && strings.Contains(result.Error.Error(), "duplicate key value violates unique") {
 		ctx.JSON(http.StatusConflict, gin.H{
-			"status":  http.StatusText(http.StatusConflict),
+			"status":  http.StatusConflict,
 			"message": "User with that email already exists",
 		})
 		return
 	} else if result.Error != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{
-			"status":  http.StatusText(http.StatusBadGateway),
+			"status":  http.StatusBadGateway,
 			"message": "Something bad happened",
 		})
 		return
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{
-		"status":  http.StatusText(http.StatusCreated),
+		"status":  http.StatusCreated,
 		"message": newUser,
 	})
 }
@@ -71,7 +73,7 @@ func (ac *AuthController) SignInUser(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{
-			"status":  http.StatusText(http.StatusBadGateway),
+			"status":  http.StatusBadGateway,
 			"message": err.Error(),
 		})
 		return
@@ -81,7 +83,7 @@ func (ac *AuthController) SignInUser(ctx *gin.Context) {
 	result := ac.DB.First(&user, "email = ?", strings.ToLower(payload.Email))
 	if result.Error != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusText(http.StatusBadRequest),
+			"status":  http.StatusBadRequest,
 			"message": "Invalid email",
 		})
 		return
@@ -89,7 +91,7 @@ func (ac *AuthController) SignInUser(ctx *gin.Context) {
 
 	if err := utils.VerifyPassword(user.Password, payload.Password); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusText(http.StatusBadRequest),
+			"status":  http.StatusBadRequest,
 			"message": "Invalid email or password",
 		})
 		return
@@ -99,16 +101,28 @@ func (ac *AuthController) SignInUser(ctx *gin.Context) {
 	token, err := utils.GenerateToken(config.TokenExpiresIn, user.ID, config.TokenSecret)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusText(http.StatusBadRequest),
+			"status":  http.StatusBadRequest,
 			"message": err.Error(),
 		})
 		return
 	}
 
+	userResponse := &models.UserResponse{
+		ID:        user.ID,
+		Name:      user.Name,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+
 	ctx.SetCookie("token", token, config.TokenMaxAge*60, "/", "localhost", false, true)
 	ctx.JSON(http.StatusOK, gin.H{
-		"status": http.StatusText(http.StatusOK),
-		"token":  token, // ? is token here
+		"status":  http.StatusOK,
+		"message": "Token generated",
+		"data": gin.H{
+			"token": token,
+			"user":  userResponse,
+		},
 	})
 }
 
@@ -116,7 +130,7 @@ func (ac *AuthController) SignInUser(ctx *gin.Context) {
 func (ac *AuthController) LogoutUser(ctx *gin.Context) {
 	ctx.SetCookie("token", "", -1, "/", "localhost", false, true)
 	ctx.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
+		"status":  http.StatusOK,
 		"message": http.StatusText(http.StatusOK),
 	})
 }

@@ -17,3 +17,12 @@
 ```
 3. To test if the server is up and running, ping the `http://localhost:8000/api/healthchecker` API endpoint.
 
+## Frontend
+1. Install all dependencies
+```
+    npm i
+```
+2. Run react server
+```
+    npm run dev
+```

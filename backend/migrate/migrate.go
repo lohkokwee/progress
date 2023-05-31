@@ -19,5 +19,9 @@ func init() {
 
 func main() {
 	initializers.DB.AutoMigrate(&models.User{})
+	initializers.DB.AutoMigrate(&models.MuscleGroup{})
+	initializers.DB.AutoMigrate(&models.Exercise{})
+	initializers.DB.AutoMigrate(&models.ExerciseHistory{})
+	initializers.DB.AutoMigrate(&models.Log{})
 	fmt.Println("? Migration complete.")
 }

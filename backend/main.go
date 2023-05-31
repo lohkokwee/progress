@@ -47,13 +47,17 @@ func main() {
   corsConfig := cors.DefaultConfig()
   corsConfig.AllowOrigins = []string{"http://localhost:8000", config.ClientOrigin}
   corsConfig.AllowCredentials = true
+  corsConfig.AllowHeaders = []string{"Authorization"} 
 
   server.Use(cors.New(corsConfig))
 
   router := server.Group("/api")
   router.GET("/healthchecker", func(ctx *gin.Context) {
     message := "Successful ping to progress app backend."
-    ctx.JSON(http.StatusOK, gin.H{"message": message})
+    ctx.JSON(http.StatusOK, gin.H{
+      "status": http.StatusOK,
+      "message": message,
+    })
   })
   AuthRouteController.AuthRoute(router)
   UserRouteController.UserRoute(router)
