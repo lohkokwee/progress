@@ -7,6 +7,6 @@ import (
 
 type MuscleGroup struct {
 	gorm.Model
-	UserID uuid.UUID
-	Name   string
+	UserID uuid.UUID `gorm:"uniqueIndex:user_id_name"`
+	Name   string    `gorm:"uniqueIndex:user_id_name"`
 }

@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lohkokwee/progress/backend/initializers"
 	"github.com/lohkokwee/progress/backend/models"
+	"github.com/lohkokwee/progress/backend/requests"
+	"github.com/lohkokwee/progress/backend/responses"
 	"github.com/lohkokwee/progress/backend/utils"
 	"gorm.io/gorm"
 )
@@ -21,7 +23,7 @@ func NewAuthController(DB *gorm.DB) AuthController {
 
 // [...] SignUp User
 func (ac *AuthController) SignUpUser(ctx *gin.Context) {
-	var payload *models.SignUpInput
+	var payload *requests.SignUpInput
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -47,18 +49,21 @@ func (ac *AuthController) SignUpUser(ctx *gin.Context) {
 	}
 
 	result := ac.DB.Create(&newUser)
-	if result.Error != nil && strings.Contains(result.Error.Error(), "duplicate key value violates unique") {
-		ctx.JSON(http.StatusConflict, gin.H{
-			"status":  http.StatusConflict,
-			"message": "User with that email already exists",
-		})
-		return
-	} else if result.Error != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{
-			"status":  http.StatusBadGateway,
-			"message": "Something bad happened",
-		})
-		return
+	if result.Error != nil {
+		if strings.Contains(result.Error.Error(), "duplicate key value violates unique") {
+		// if errors.Is(result.Error, gorm.ErrDuplicatedKey) { // Currently doesn't work V1.25.1 - should migrate to this
+			ctx.JSON(http.StatusConflict, gin.H{
+				"status":  http.StatusConflict,
+				"message": "User with that email already exists",
+			})
+			return
+		} else {
+			ctx.JSON(http.StatusBadGateway, gin.H{
+				"status":  http.StatusBadGateway,
+				"message": result.Error.Error(),
+			})
+			return
+		}
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{
@@ -69,7 +74,7 @@ func (ac *AuthController) SignUpUser(ctx *gin.Context) {
 
 // [...] SignIn User
 func (ac *AuthController) SignInUser(ctx *gin.Context) {
-	var payload *models.SignInInput
+	var payload *requests.SignInInput
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{
@@ -107,7 +112,7 @@ func (ac *AuthController) SignInUser(ctx *gin.Context) {
 		return
 	}
 
-	userResponse := &models.UserResponse{
+	userResponse := &responses.UserResponse{
 		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,

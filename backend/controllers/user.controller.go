@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lohkokwee/progress/backend/models"
+	"github.com/lohkokwee/progress/backend/responses"
 	"gorm.io/gorm"
 )
 
@@ -19,7 +20,7 @@ func NewUserController (DB *gorm.DB) UserController {
 func (uc *UserController) GetUser(ctx *gin.Context) {
 	currentUser := ctx.MustGet("currentUser").(models.User)
 	
-	userResponse := &models.UserResponse{
+	userResponse := &responses.UserResponse{
 		ID: currentUser.ID,
 		Name: currentUser.Name,
 		Email: currentUser.Email,

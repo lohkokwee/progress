@@ -19,6 +19,9 @@ var (
 
   UserController controllers.UserController
   UserRouteController routes.UserRouteController
+
+  MuscleGroupController controllers.MuscleGroupController
+  MuscleGroupRouteController routes.MuscleGroupRouteController
 )
 
 func init() {
@@ -33,7 +36,10 @@ func init() {
   AuthRouteController = routes.NewAuthRouteController(AuthController)
 
   UserController = controllers.NewUserController(initializers.DB)
-  UserRouteController = routes.NewRouteUserController(UserController)
+  UserRouteController = routes.NewUserRouteController(UserController)
+
+  MuscleGroupController = controllers.NewMuscleGroupController(initializers.DB)
+  MuscleGroupRouteController = routes.NewMuscleGroupRouteController(MuscleGroupController)
 
   server = gin.Default()
 }
@@ -61,5 +67,6 @@ func main() {
   })
   AuthRouteController.AuthRoute(router)
   UserRouteController.UserRoute(router)
+  MuscleGroupRouteController.MuscleGroupRoute(router)
   log.Fatal(server.Run(":" + config.ServerPort))
 }
